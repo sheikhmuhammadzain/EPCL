@@ -15,7 +15,22 @@ def stream_answer(question: str, relevant_insights: Dict[str, Any], model: str |
         yield "[OpenAI missing configuration: set OPENAI_API_KEY env var]"
         return
 
-    client = OpenAI()
+    # Initialize client defensively so version conflicts don't crash ASGI stream
+    try:
+        client = OpenAI()
+    except TypeError as te:
+        # Common cause: httpx>=0.28 where 'proxies' kwarg was removed; OpenAI SDK may pass it
+        hint = (
+            "[OpenAI init error: "
+            + getattr(te, 'message', str(te))
+            + "; fix: pin httpx<0.28 (e.g., pip install 'httpx<0.28') or upgrade openai to a compatible version.]"
+        )
+        yield hint
+        return
+    except Exception as e:
+        yield f"[OpenAI init error: {getattr(e, 'message', str(e))}]"
+        return
+
     mdl = model or DEFAULT_MODEL
 
     system = (

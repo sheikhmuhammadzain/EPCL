@@ -136,13 +136,15 @@ def find_date_series(df: pd.DataFrame) -> pd.Series:
     ]
     for col in candidates:
         if col in df.columns:
-            s = pd.to_datetime(df[col], errors='coerce')
+            # Use robust coercion (handles numeric Excel serials and D/M/Y strings) to avoid warnings
+            s = coerce_mixed_excel_dates(df[col])
             if s.notna().any():
                 return s
     # Fallback: try first column that can be coerced to datetime with any non-na values
     for col in df.columns:
         try:
-            s = pd.to_datetime(df[col], errors='coerce')
+            # Robust coercion in fallback as well
+            s = coerce_mixed_excel_dates(df[col])
             if s.notna().any():
                 return s
         except Exception:
@@ -174,7 +176,8 @@ def monthly_count_from(df: pd.DataFrame, date_col: str, label: str) -> Dict[str,
 def quarterly_count_from(df: pd.DataFrame, date_col: str, label: str) -> Dict[str, Any]:
     if df is None or df.empty or date_col not in df.columns:
         return {"labels": [], "datasets": [{"label": label, "data": []}]}
-    s = pd.to_datetime(df[date_col], errors='coerce').dropna()
+    # Use robust coercion to avoid pandas parsing warnings and handle Excel serials
+    s = coerce_mixed_excel_dates(df[date_col]).dropna()
     if s.empty:
         return {"labels": [], "datasets": [{"label": label, "data": []}]}
     vc = s.dt.to_period('Q').value_counts().sort_index()
@@ -217,12 +220,13 @@ def map_findings_to_parent_dates(findings_df: pd.DataFrame, parent_df: pd.DataFr
         return pd.DataFrame(columns=["_date"])
     # Build map from parent title -> date
     parent = parent_df[[parent_title_col, parent_date_col]].copy()
-    parent[parent_date_col] = pd.to_datetime(parent[parent_date_col], errors='coerce')
+    # Robust date coercion to avoid pandas warnings and handle Excel serials
+    parent[parent_date_col] = coerce_mixed_excel_dates(parent[parent_date_col])
     parent = parent.dropna(subset=[parent_date_col])
     title_to_date = dict(zip(parent[parent_title_col].astype(str), parent[parent_date_col]))
     dates = findings_df[findings_title_col].astype(str).map(title_to_date)
     out = pd.DataFrame({"_date": dates})
-    out["_date"] = pd.to_datetime(out["_date"], errors='coerce')
+    out["_date"] = coerce_mixed_excel_dates(out["_date"]) 
     out = out.dropna(subset=["_date"])  # rows we could map
     return out
     candidates = [
