@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { ChartNoAxesCombined, ChartPie, ChartBarIncreasing, ChartBarDecreasing, FileChartColumn, Activity, ShieldAlert, ClipboardList, ClipboardCheck, RefreshCw, Upload } from "lucide-react"
+import { ChartNoAxesCombined, ChartPie, ChartBarIncreasing, ChartBarDecreasing, FileChartColumn, Activity, ShieldAlert, ClipboardList, ClipboardCheck, RefreshCw, Upload, Database } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
@@ -437,6 +437,16 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               <Upload className="h-4 w-4" />
               <span className="hidden md:inline">Upload</span>
             </Button>
+            <a
+              href="http://103.18.20.205:8000/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-xs md:text-sm hover:opacity-90"
+              aria-label="Talk to SQL Agent"
+            >
+              <Database className="h-4 w-4" />
+              <span>Talk to SQL Agent</span>
+            </a>
           </div>
         </div>
       </div>
