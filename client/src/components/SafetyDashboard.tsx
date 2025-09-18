@@ -390,6 +390,28 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
     { id: "location-heatmap", label: "Heatmap" },
   ]
 
+  const [activeId, setActiveId] = useState<string | null>(null)
+  useEffect(() => {
+    const observers: IntersectionObserver[] = []
+    const callback: IntersectionObserverCallback = (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute("id")
+          if (id) setActiveId(id)
+        }
+      }
+    }
+    const opts: IntersectionObserverInit = { rootMargin: "-120px 0px -70% 0px", threshold: [0, 0.25, 0.5, 1] }
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id)
+      if (!el) return
+      const ob = new IntersectionObserver(callback, opts)
+      ob.observe(el)
+      observers.push(ob)
+    })
+    return () => observers.forEach((o) => o.disconnect())
+  }, [])
+
   return (
     <section className={cn("w-full max-w-full", className)} style={style} aria-label="EPCL VEHS Safety Dashboard">
       {/* Header */}
@@ -504,7 +526,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
         {/* Left Sidebar */}
         <aside className="hidden lg:block h-fit lg:sticky lg:top-24">
-          <nav className="rounded-lg border border-border bg-card p-3 text-sm">
+          <nav className="rounded-lg border border-border bg-card p-3 text-sm" aria-label="Sections">
             {hasUploaded && (
               <div className="mb-3">
                 <Button
@@ -520,13 +542,55 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             )}
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sections</p>
             <ul className="space-y-1">
-              <li><a href="#incidents" className="block rounded px-2 py-1.5 hover:bg-primary/10">Incidents</a></li>
-              <li><a href="#hazards" className="block rounded px-2 py-1.5 hover:bg-primary/10">Hazards</a></li>
-              <li><a href="#audits" className="block rounded px-2 py-1.5 hover:bg-primary/10">Audits</a></li>
-              <li><a href="#audit-findings" className="block rounded px-2 py-1.5 hover:bg-primary/10">Audit Findings</a></li>
-              <li><a href="#inspections" className="block rounded px-2 py-1.5 hover:bg-primary/10">Inspections</a></li>
-              <li><a href="#inspection-findings" className="block rounded px-2 py-1.5 hover:bg-primary/10">Inspection Findings</a></li>
-              <li><a href="#location-heatmap" className="block rounded px-2 py-1.5 hover:bg-primary/10">Heatmap</a></li>
+              <li>
+                <a href="#hazards" className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary/10", activeId === "hazards" && "bg-primary/10 border border-primary/30")}
+                   aria-current={activeId === "hazards" ? "page" : undefined}>
+                  <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span>Hazards</span>
+                </a>
+              </li>
+              <li>
+                <a href="#incidents" className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary/10", activeId === "incidents" && "bg-primary/10 border border-primary/30")}
+                   aria-current={activeId === "incidents" ? "page" : undefined}>
+                  <Activity className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span>Incidents</span>
+                </a>
+              </li>
+              <li>
+                <a href="#audits" className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary/10", activeId === "audits" && "bg-primary/10 border border-primary/30")}
+                   aria-current={activeId === "audits" ? "page" : undefined}>
+                  <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span>Audits</span>
+                </a>
+              </li>
+              <li>
+                <a href="#audit-findings" className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary/10", activeId === "audit-findings" && "bg-primary/10 border border-primary/30")}
+                   aria-current={activeId === "audit-findings" ? "page" : undefined}>
+                  <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span>Audit Findings</span>
+                </a>
+              </li>
+              <li>
+                <a href="#inspections" className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary/10", activeId === "inspections" && "bg-primary/10 border border-primary/30")}
+                   aria-current={activeId === "inspections" ? "page" : undefined}>
+                  <ClipboardCheck className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span>Inspections</span>
+                </a>
+              </li>
+              <li>
+                <a href="#inspection-findings" className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary/10", activeId === "inspection-findings" && "bg-primary/10 border border-primary/30")}
+                   aria-current={activeId === "inspection-findings" ? "page" : undefined}>
+                  <ClipboardCheck className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span>Inspection Findings</span>
+                </a>
+              </li>
+              <li>
+                <a href="#location-heatmap" className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-primary/10", activeId === "location-heatmap" && "bg-primary/10 border border-primary/30")}
+                   aria-current={activeId === "location-heatmap" ? "page" : undefined}>
+                  <ChartNoAxesCombined className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span>Heatmap</span>
+                </a>
+              </li>
             </ul>
           </nav>
         </aside>
