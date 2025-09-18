@@ -2,10 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { ChartNoAxesCombined, ChartPie, ChartBarIncreasing, ChartBarDecreasing, FileChartColumn, Activity, ShieldAlert, ClipboardList, ClipboardCheck } from "lucide-react"
+import { ChartNoAxesCombined, ChartPie, ChartBarIncreasing, ChartBarDecreasing, FileChartColumn, Activity, ShieldAlert, ClipboardList, ClipboardCheck, RefreshCw, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import MobileSectionNav from "@/components/MobileSectionNav"
 
 import {
   Card,
@@ -68,14 +69,24 @@ type SafetyDashboardProps = {
   style?: React.CSSProperties
 }
 
-const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]
+// Enhanced palette with harmonious green shades for better series distinction
+const CHART_COLORS = [
+  "#16a34a", // emerald-600
+  "#22c55e", // green-500
+  "#84cc16", // lime-500
+  "#65a30d", // olive
+  "#166534", // emerald-900
+  "#4ade80", // green-300
+  "#a3e635", // lime-300
+  "#10b981", // emerald-500
+]
 
 // Generate n green shades (as HEX) for pie slices to avoid grayscale in some environments
 function greenPalette(n: number): string[] {
   const colors: string[] = []
   const N = Math.max(1, n)
   const h = 140 // green hue
-  const s = 0.7
+  const s = 0.75
   // helper HSL -> HEX
   const hslToHex = (hh: number, ss: number, ll: number) => {
     const c = (1 - Math.abs(2 * ll - 1)) * ss
@@ -96,8 +107,8 @@ function greenPalette(n: number): string[] {
   }
   for (let i = 0; i < N; i++) {
     const t = N === 1 ? 0.5 : i / (N - 1)
-    // Lightness from 0.7 (light) to 0.35 (dark) in 0-1 range
-    const l = 0.7 - 0.35 * t
+    // Lightness from 0.78 (light) to 0.32 (dark) for better contrast
+    const l = 0.78 - 0.46 * t
     colors.push(hslToHex(h, s, l))
   }
   return colors
@@ -167,6 +178,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
   const [isDragging, setIsDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [hasUploaded, setHasUploaded] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   // Helper fetcher with robust error handling
   const fetchJSON = useCallback(async <T,>(url: string, opts?: RequestInit): Promise<T> => {
@@ -278,6 +290,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         { label: "Inspections", value: totalInspections, delta: null },
       ]
       setKpis({ loading: false, error: null, data: kpiData })
+      setLastUpdated(new Date())
     } catch (e: any) {
       const msg = e?.message || "Failed to load charts"
 
@@ -367,21 +380,41 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
     return `hsl(140 70% ${L}%)`
   }, [])
 
+  const sections = [
+    { id: "incidents", label: "Incidents" },
+    { id: "hazards", label: "Hazards" },
+    { id: "audits", label: "Audits" },
+    { id: "audit-findings", label: "Audit Findings" },
+    { id: "inspections", label: "Inspections" },
+    { id: "inspection-findings", label: "Inspection Findings" },
+    { id: "location-heatmap", label: "Heatmap" },
+  ]
+
   return (
     <section className={cn("w-full max-w-full", className)} style={style} aria-label="EPCL VEHS Safety Dashboard">
       {/* Header */}
-      <div className="w-full bg-secondary text-secondary-foreground rounded-[calc(var(--radius)+4px)] border border-border">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="relative inline-flex h-16 w-16 md:h-20 md:w-28 items-center justify-center rounded-md">
-            <Image src="/logo.svg" alt="EPCL" fill sizes="(min-width: 768px) 112px, 64px" className="object-contain" />
+      <div className="w-full bg-secondary text-secondary-foreground rounded-[calc(var(--radius)+4px)] border border-border card-elevated relative overflow-hidden">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full" style={{ background: "radial-gradient(50% 50% at 50% 50%, hsl(var(--primary)/0.15) 0%, transparent 70%)" }} aria-hidden />
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative inline-flex h-16 w-16 md:h-20 md:w-28 items-center justify-center rounded-md bg-card">
+              <Image src="/logo.png" alt="EPCL" fill sizes="(min-width: 768px) 112px, 64px" className="object-contain" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="h2-tight truncate">EPCL VEHS Dashboard</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Equipment hazard safety insights and monitoring</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-base sm:text-lg md:text-xl font-semibold tracking-tight truncate">
-              EPCL VEHS Dashboard
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Equipment hazard safety insights and monitoring
-            </p>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">Updated: {formatTime(lastUpdated)}</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => refreshAll()} aria-label="Refresh data">
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden md:inline">Refresh</span>
+            </Button>
+            <Button type="button" variant="default" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading} aria-label="Upload Excel data">
+              <Upload className="h-4 w-4" />
+              <span className="hidden md:inline">Upload</span>
+            </Button>
           </div>
         </div>
       </div>
@@ -409,6 +442,8 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
           kpis.data!.map((k) => <KpiCard key={k.label} kpi={k} />)
         )}
       </div>
+
+      <MobileSectionNav sections={sections} />
 
       {/* Upload (only show until a file has been uploaded / data exists) */}
       {!hasUploaded && (
@@ -466,9 +501,9 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
       )}
 
       {/* Sidebar + Content */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
         {/* Left Sidebar */}
-        <aside className="h-fit md:sticky md:top-24">
+        <aside className="hidden lg:block h-fit lg:sticky lg:top-24">
           <nav className="rounded-lg border border-border bg-card p-3 text-sm">
             {hasUploaded && (
               <div className="mb-3">
@@ -497,9 +532,10 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         </aside>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Anchor placeholders for smooth scrolling */}
-          <div id="incidents" className="col-span-2 -mt-20 pt-20" aria-hidden />
+          <div id="incidents" className="col-span-1 lg:col-span-2 scroll-mt-24" aria-hidden />
+          <div className="col-span-1 lg:col-span-2 separator-soft" />
           {/* Incidents Section */}
           <ChartCard
             title="Incidents — Types"
@@ -507,7 +543,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             state={incidentsTypes}
             chartKey="incidents_types"
             render={(data) => (
-              <ChartContainer config={{}} className="h-[420px] md:h-[440px] w-full">
+              <ChartContainer config={{}} className="h-[300px] sm:h-[360px] md:h-[420px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RePieChart>
                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -530,7 +566,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             state={incidentsTopLocations}
             chartKey="incidents_top_locations"
             render={(data) => (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[...data].sort((a,b)=>a.value-b.value)} layout="vertical" margin={{ left: 16, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -553,7 +589,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               config={{
                 value: { label: "Count", color: "var(--chart-1)" },
               }}
-              className="h-[360px] md:h-[380px] w-full"
+              className="h-[260px] sm:h-[300px] md:h-[360px] w-full"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ left: 8, right: 8, bottom: 8 }}>
@@ -576,7 +612,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
           render={(data) => (
             <ChartContainer
               config={{}}
-              className="h-[420px] md:h-[440px] w-full"
+              className="h-[300px] sm:h-[360px] md:h-[420px] w-full"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <RePieChart>
@@ -611,7 +647,8 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         />
 
           {/* Hazards anchor */}
-          <div id="hazards" className="col-span-2 -mt-20 pt-20" aria-hidden />
+          <div id="hazards" className="col-span-1 lg:col-span-2 scroll-mt-24" aria-hidden />
+          <div className="col-span-1 lg:col-span-2 separator-soft" />
           {/* Hazards Section */}
           <ChartCard
             title="Hazards — Monthly"
@@ -619,7 +656,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             state={hazardsMonthly}
             chartKey="hazards_monthly"
             render={() => (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={hazardsLineSeries} margin={{ left: 8, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -638,7 +675,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             state={hazardsByLocation}
             chartKey="hazards_by_location"
             render={(data) => (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[...data].sort((a,b)=>a.value-b.value)} layout="vertical" margin={{ left: 16, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -657,7 +694,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             state={hazardsByRisk}
             chartKey="hazards_by_risk"
             render={(data) => (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[...data].sort((a,b)=>a.value-b.value)} layout="vertical" margin={{ left: 16, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -677,7 +714,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             state={hazardsByArea}
             chartKey="hazards_by_area"
             render={(data) => (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[...data].sort((a,b)=>a.value-b.value)} layout="vertical" margin={{ left: 16, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -690,7 +727,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               </ChartContainer>
             )}
           />
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
           <ChartCard
             title="Hazards vs Incidents — By Department/Section"
             description="Side-by-side comparison"
@@ -699,7 +736,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             render={(data) => {
               const seriesKeys = Object.keys(data[0] || {}).filter((k) => k !== "name")
               return (
-                <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+                <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ left: 8, right: 8, bottom: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -718,7 +755,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             }}
           />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <ChartCard
               title="Hazards — Heatmap (Location × Type)"
               description="Concentration of types across locations"
@@ -726,7 +763,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               fullHeight
               chartKey="hazards_heatmap"
               render={(hm: HeatMatrix) => (
-                <div className="w-full h-[420px] md:h-[480px] flex">
+                <div className="w-full h-[320px] sm:h-[380px] md:h-[480px] flex">
                   <div className="flex-1 overflow-auto rounded-md border border-border">
                     <div
                       className="grid text-xs"
@@ -787,7 +824,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               config={{
                 value: { label: "Count", color: "var(--chart-4)" },
               }}
-              className="h-[360px] md:h-[380px] w-full"
+              className="h-[260px] sm:h-[300px] md:h-[360px] w-full"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyLineSeries} margin={{ left: 8, right: 8, bottom: 8 }}>
@@ -819,7 +856,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               config={{
                 value: { label: "Count", color: "var(--chart-2)" },
               }}
-              className="h-[360px] md:h-[380px] w-full"
+              className="h-[260px] sm:h-[300px] md:h-[360px] w-full"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -844,7 +881,8 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         />
 
           {/* Audits anchor */}
-          <div id="audits" className="col-span-2 -mt-20 pt-20" aria-hidden />
+          <div id="audits" className="col-span-1 lg:col-span-2 scroll-mt-24" aria-hidden />
+          <div className="col-span-1 lg:col-span-2 separator-soft" />
         <ChartCard
           title="Location Analysis (Stacked)"
           description="Category stacks per location"
@@ -853,7 +891,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
           render={(data) => {
             const keys = Object.keys(data[0] || {}).filter((k) => k !== "name")
             return (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data} margin={{ left: 8, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -879,7 +917,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
           render={(data) => {
             const keys = Object.keys(data[0] || {}).filter((k) => k !== "name")
             return (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data} margin={{ left: 8, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -898,7 +936,8 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         />
 
           {/* Audit Findings anchor */}
-          <div id="audit-findings" className="col-span-2 -mt-20 pt-20" aria-hidden />
+          <div id="audit-findings" className="col-span-1 lg:col-span-2 scroll-mt-24" aria-hidden />
+          <div className="col-span-1 lg:col-span-2 separator-soft" />
         <ChartCard
           title="Proportion Analysis"
           description="Share by location"
@@ -912,7 +951,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
             const othersTotal = sorted.slice(N).reduce((s, d) => s + d.value, 0)
             const finalData = othersTotal > 0 ? [...top, { name: "Others", value: othersTotal }] : top
             return (
-              <ChartContainer config={{}} className="h-[420px] md:h-[440px] w-full">
+              <ChartContainer config={{}} className="h-[300px] sm:h-[360px] md:h-[420px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RePieChart>
                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -944,7 +983,8 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         />
 
           {/* Inspections anchor */}
-          <div id="inspections" className="col-span-2 -mt-20 pt-20" aria-hidden />
+          <div id="inspections" className="col-span-1 lg:col-span-2 scroll-mt-24" aria-hidden />
+          <div className="col-span-1 lg:col-span-2 separator-soft" />
         <ChartCard
           title="Status Tracking (Stacked)"
           description="Status by location"
@@ -953,7 +993,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
           render={(data) => {
             const keys = Object.keys(data[0] || {}).filter((k) => k !== "name")
             return (
-              <ChartContainer config={{}} className="h-[360px] md:h-[380px] w-full">
+              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data} margin={{ left: 8, right: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -972,8 +1012,10 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         />
 
           {/* Inspection Findings anchor */}
-          <div id="inspection-findings" className="col-span-2 -mt-20 pt-20" aria-hidden />
-          <div id="location-heatmap" className="col-span-2 -mt-20 pt-20" aria-hidden />
+          <div id="inspection-findings" className="col-span-1 lg:col-span-2 scroll-mt-24" aria-hidden />
+          <div className="col-span-1 lg:col-span-2 separator-soft" />
+          <div id="location-heatmap" className="col-span-1 lg:col-span-2 scroll-mt-24" aria-hidden />
+          <div className="col-span-1 lg:col-span-2 separator-soft" />
         <ChartCard
           title="Location Heatmap"
           description="Incidents and Hazards by location"
@@ -981,7 +1023,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
           fullHeight
           chartKey="heatmap"
           render={(hm: HeatMatrix) => (
-            <div className="w-full h-[420px] md:h-[440px] flex">
+            <div className="w-full h-[320px] sm:h-[380px] md:h-[440px] flex">
               {/* Heatmap grid */}
               <div className="flex-1 overflow-auto rounded-md border border-border">
                 <div
@@ -1180,46 +1222,50 @@ function ChartCard<T>({
 
   return (
     <Card className="bg-card">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <CardTitle className="text-sm md:text-base">{title}</CardTitle>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button type="button" variant="outline" size="sm" aria-label="Insights">
-                    <Lightbulb className="h-4 w-4" />
-                    <span className="hidden sm:inline">Insights</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-xl">
-                  <DialogHeader>
-                    <DialogTitle>AI Insights</DialogTitle>
-                    <DialogDescription>{title}</DialogDescription>
-                  </DialogHeader>
-                  <div className="max-h-[60vh] overflow-auto text-sm">
-                    {loading && !insights ? (
-                      <p className="text-muted-foreground">Generating insights…</p>
-                    ) : (
-                      <InsightsView text={insights} />
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </TooltipTrigger>
-            <TooltipContent>AI-generated analysis and recommendations</TooltipContent>
-          </Tooltip>
+      <CardHeader className="pb-2 separator-soft">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {icon}
+            <CardTitle className="text-sm md:text-base truncate">{title}</CardTitle>
+          </div>
+          <div className="shrink-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" aria-label="Insights">
+                      <Lightbulb className="h-4 w-4" />
+                      <span className="hidden sm:inline">Insights</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                      <DialogTitle>AI Insights</DialogTitle>
+                      <DialogDescription>{title}</DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-auto text-sm">
+                      {loading && !insights ? (
+                        <p className="text-muted-foreground">Generating insights…</p>
+                      ) : (
+                        <InsightsView text={insights} />
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </TooltipTrigger>
+              <TooltipContent>AI-generated analysis and recommendations</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         {description ? (
           <CardDescription className="text-xs text-muted-foreground">{description}</CardDescription>
         ) : null}
       </CardHeader>
-      <CardContent className={cn(fullHeight ? "pt-2" : "pt-2")}>        
+      <CardContent className={cn(fullHeight ? "pt-3" : "pt-3")}>        
         {state.loading ? (
-          <div className="h-[360px] md:h-[380px] w-full animate-pulse rounded-lg bg-secondary" />
+          <div className="h-[260px] sm:h-[300px] md:h-[360px] w-full animate-pulse rounded-lg bg-secondary" />
         ) : state.error ? (
-          <div className="h-[360px] md:h-[380px] w-full flex items-center justify-center">
+          <div className="h-[260px] sm:h-[300px] md:h-[360px] w-full flex items-center justify-center">
             <p className="text-sm text-muted-foreground">Error: {state.error}</p>
           </div>
         ) : !state.data || (Array.isArray(state.data) && state.data.length === 0) ? (
@@ -1277,6 +1323,18 @@ function formatNumber(n: number) {
     return Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n)
   } catch {
     return String(n)
+  }
+}
+
+function formatTime(d: Date | null) {
+  if (!d) return "--"
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d)
+  } catch {
+    return d.toLocaleTimeString()
   }
 }
 
