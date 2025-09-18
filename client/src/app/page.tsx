@@ -16,7 +16,7 @@ export default function Page() {
           <div className="flex h-16 md:h-20 items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="relative inline-flex h-16 w-16 md:h-20 md:w-28 items-center justify-center rounded-md text-primary-foreground">
-                <Image src="/logo.svg" alt="EPCL" fill sizes="(min-width: 768px) 112px, 64px" className="object-contain" />
+                <Image src="/logo.png" alt="EPCL" fill sizes="(min-width: 768px) 112px, 64px" className="object-contain" />
               </div>
               <div className="leading-tight">
                 <p className="text-sm font-semibold">EPCL VEHS Safety</p>
