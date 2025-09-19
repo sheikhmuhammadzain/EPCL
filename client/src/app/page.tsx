@@ -30,7 +30,7 @@ export default function Page() {
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background hover:bg-primary/10"
                 onClick={() => {
                   if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new Event('epcl:chat-open'))
+                    window.open('http://103.18.20.205:8501/', '_blank', 'noopener,noreferrer')
                   }
                 }}
               >

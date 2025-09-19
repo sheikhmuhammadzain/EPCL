@@ -317,14 +317,18 @@ export default function ChatWidget({ className, open, onOpenChange }: { classNam
           type="button"
           aria-label="Open chat"
           className="h-12 w-12 rounded-full shadow-lg pointer-events-auto"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.open('http://103.18.20.205:8501/', '_blank', 'noopener,noreferrer')
+            }
+          }}
         >
           <MessageCircle className="h-5 w-5" />
         </Button>
       )}
 
       {/* Chat Window */}
-      {isOpen && (
+      {false && isOpen && (
         <Card className={cn(
           isFull
             ? "w-full h-full max-w-none max-h-none rounded-none sm:rounded-xl"
