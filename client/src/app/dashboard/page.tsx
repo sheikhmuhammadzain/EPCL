@@ -8,6 +8,7 @@ import SafetyDashboard from "@/components/SafetyDashboard"
 import ChatWidget from "@/components/chat/ChatWidget"
 
 export default function Page() {
+  const ADV_ANALYTICS_URL = process.env.NEXT_PUBLIC_ADV_ANALYTICS_URL || 'http://103.18.20.205:8503/'
   return (
     <div className="min-h-dvh bg-background text-foreground">
       {/* Top Bar */}
@@ -43,12 +44,18 @@ export default function Page() {
               >
                 <Bell className="h-4 w-4" />
               </button>
-              <div className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5">
+              <a
+                href={ADV_ANALYTICS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 hover:bg-primary/10"
+                aria-label="Show Advance analytics"
+              >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <span className="hidden text-sm md:inline">Analyst</span>
-              </div>
+                <span className="text-sm">Show Advance analytics</span>
+              </a>
             </div>
           </div>
         </div>
