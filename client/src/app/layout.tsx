@@ -8,8 +8,8 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 
 export const metadata: Metadata = {
-  title: "EPCL Data Assistant",
-  description: "EPCL Data Assistant",
+  title: "Safety Co-Pilot",
+  description: "Safety Co-Pilot — Safety Intelligence Dashboard",
 };
 
 // Geist fonts expose .variable with CSS var names (e.g., --font-geist-sans / --font-geist-mono)

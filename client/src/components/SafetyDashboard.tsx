@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { ChartNoAxesCombined, ChartPie, ChartBarIncreasing, ChartBarDecreasing, FileChartColumn, Activity, ShieldAlert, ClipboardList, ClipboardCheck, RefreshCw, Upload, Database } from "lucide-react"
+import { ChartNoAxesCombined, ChartPie, ChartBarIncreasing, ChartBarDecreasing, FileChartColumn, Activity, ShieldAlert, ClipboardList, ClipboardCheck, RefreshCw, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
@@ -115,7 +115,7 @@ function greenPalette(n: number): string[] {
 }
 
 export default function SafetyDashboard({ className, style }: SafetyDashboardProps) {
-  const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "")
+  const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://103.18.20.205:8003").replace(/\/$/, "")
   const [kpis, setKpis] = useState<ApiState<KPI[]>>({ loading: true, error: null, data: null })
 
   const [entriesByCategory, setEntriesByCategory] = useState<ApiState<SimpleDatum[]>>({
@@ -320,6 +320,19 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
     refreshAll()
   }, [refreshAll])
 
+  // Smooth-scroll to the upload section when landing with ?focus=upload
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('focus') === 'upload') {
+      const el = document.getElementById('upload')
+      if (el) {
+        // Defer to ensure layout is ready
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+      }
+    }
+  }, [hasUploaded])
+
   const onFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
     const file = files[0]
@@ -413,17 +426,17 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
   }, [])
 
   return (
-    <section className={cn("w-full max-w-full", className)} style={style} aria-label="EPCL VEHS Safety Dashboard">
+    <section className={cn("w-full max-w-full", className)} style={style} aria-label="Safety Co-Pilot Dashboard">
       {/* Header */}
       <div className="w-full bg-secondary text-secondary-foreground rounded-[calc(var(--radius)+4px)] border border-border card-elevated relative overflow-hidden">
         <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full" style={{ background: "radial-gradient(50% 50% at 50% 50%, hsl(var(--primary)/0.15) 0%, transparent 70%)" }} aria-hidden />
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative inline-flex h-16 w-16 md:h-20 md:w-28 items-center justify-center rounded-md bg-card">
-              <Image src="/logo.png" alt="EPCL" fill sizes="(min-width: 768px) 112px, 64px" className="object-contain" />
+              <Image src="/logo.png" alt="Safety Co-Pilot" fill sizes="(min-width: 768px) 112px, 64px" className="object-contain" />
             </div>
             <div className="min-w-0">
-              <h1 className="h2-tight truncate">EPCL VEHS Dashboard</h1>
+              <h1 className="h2-tight truncate">Safety Co-Pilot Dashboard</h1>
               <p className="text-xs sm:text-sm text-muted-foreground truncate">Equipment hazard safety insights and monitoring</p>
             </div>
           </div>
@@ -437,16 +450,6 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               <Upload className="h-4 w-4" />
               <span className="hidden md:inline">Upload</span>
             </Button>
-            <a
-              href="http://103.18.20.205:8000/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-xs md:text-sm hover:opacity-90"
-              aria-label="Talk to SQL Agent"
-            >
-              <Database className="h-4 w-4" />
-              <span>Talk to SQL Agent</span>
-            </a>
           </div>
         </div>
       </div>
@@ -479,7 +482,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
 
       {/* Upload (only show until a file has been uploaded / data exists) */}
       {!hasUploaded && (
-        <Card className="mt-6 bg-card">
+        <Card id="upload" className="mt-6 bg-card">
           <CardHeader>
             <CardTitle className="text-base md:text-lg">Upload Excel Data (.xlsx / .xls)</CardTitle>
             <CardDescription>Drag and drop an Excel file or click to select. The dashboard refreshes after upload.</CardDescription>
@@ -538,7 +541,7 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
         <aside className="hidden lg:block h-fit lg:sticky lg:top-24">
           <nav className="rounded-lg border border-border bg-card p-3 text-sm" aria-label="Sections">
             {hasUploaded && (
-              <div className="mb-3">
+              <div id="upload" className="mb-3">
                 <Button
                   type="button"
                   variant="outline"

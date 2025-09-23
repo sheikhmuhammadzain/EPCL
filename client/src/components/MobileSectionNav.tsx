@@ -61,16 +61,6 @@ export default function MobileSectionNav({ sections }: { sections: Section[] }) 
               </li>
             )
           })}
-          <li className="shrink-0 ml-auto">
-            <a
-              href="http://103.18.20.205:8000/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium"
-            >
-              SQL Agent
-            </a>
-          </li>
         </ul>
       </div>
     </nav>
