@@ -256,12 +256,7 @@ export default function Page() {
                 <Link href="/dashboard">
                   <Button className="gap-1.5">Launch Dashboard <ArrowRight className="h-4 w-4" /></Button>
                 </Link>
-                <Link href="/dashboard?focus=upload">
-                  <Button variant="secondary" className="gap-1.5"><Upload className="h-4 w-4" /> Upload Excel</Button>
-                </Link>
-                <a href="http://103.18.20.205:8501/" target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="gap-1.5"><MessageCircle className="h-4 w-4" /> Open Chat</Button>
-                </a>
+              
               </div>
             </Reveal>
           </div>
