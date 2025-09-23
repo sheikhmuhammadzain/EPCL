@@ -5,7 +5,7 @@ import Image from "next/image"
 
 import { LayoutDashboard, Bell, User, MessageCircle } from "lucide-react"
 import SafetyDashboard from "@/components/SafetyDashboard"
-import ChatWidget from "@/components/chat/ChatWidget"
+// import ChatWidget from "@/components/chat/ChatWidget"
 
 export default function Page() {
   const ADV_ANALYTICS_URL = process.env.NEXT_PUBLIC_ADV_ANALYTICS_URL || 'http://103.18.20.205:8503/'
@@ -67,7 +67,9 @@ export default function Page() {
       </main>
 
       {/* Floating Chat Bubble/Window (uncontrolled & portal-mounted) */}
+      {/** Temporarily disabled
       <ChatWidget />
+      */}
     </div>
   )
 }
