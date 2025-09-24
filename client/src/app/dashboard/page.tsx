@@ -3,7 +3,7 @@
 import React from "react"
 import Image from "next/image"
 
-import { LayoutDashboard, Bell, User, MessageCircle } from "lucide-react"
+import { Bell, User } from "lucide-react"
 import SafetyDashboard from "@/components/SafetyDashboard"
 // import ChatWidget from "@/components/chat/ChatWidget"
 
@@ -25,18 +25,6 @@ export default function Page() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-label="Chat"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background hover:bg-primary/10"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.open('http://103.18.20.205:8501/', '_blank', 'noopener,noreferrer')
-                  }
-                }}
-              >
-                <MessageCircle className="h-4 w-4" />
-              </button>
               <button
                 type="button"
                 aria-label="Notifications"

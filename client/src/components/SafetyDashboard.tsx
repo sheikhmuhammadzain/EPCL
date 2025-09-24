@@ -1310,20 +1310,24 @@ function InsightsView({ text }: { text: string }) {
     }
     return [text]
   }, [text])
+  // If backend accidentally streams a React error page or dev overlay, avoid rendering it as markdown
+  if (/Minified React error/i.test(body) || /react\.dev\/errors\//i.test(body)) {
+    return <p className="text-muted-foreground">Insights are unavailable right now. Please try again.</p>
+  }
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        h1: (props) => <h2 className="text-base font-semibold mt-2 mb-1" {...props} />,
-        h2: (props) => <h3 className="text-sm font-semibold mt-2 mb-1" {...props} />,
-        h3: (props) => <h4 className="text-sm font-semibold mt-2 mb-1" {...props} />,
-        p: (props) => <p className="my-2 leading-6" {...props} />,
-        ul: (props) => <ul className="list-disc ml-5 my-2 space-y-1" {...props} />,
-        ol: (props) => <ol className="list-decimal ml-5 my-2 space-y-1" {...props} />,
-        li: (props) => <li className="leading-6" {...props} />,
-        table: (props) => <table className="w-full text-left text-xs border-collapse my-3" {...props} />,
-        th: (props) => <th className="border-b border-border px-2 py-1 font-semibold" {...props} />,
-        td: (props) => <td className="border-b border-border px-2 py-1" {...props} />,
+        h1: ({ node, ...props }) => <h2 className="text-base font-semibold mt-2 mb-1" {...props} />,
+        h2: ({ node, ...props }) => <h3 className="text-sm font-semibold mt-2 mb-1" {...props} />,
+        h3: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-2 mb-1" {...props} />,
+        p: ({ node, ...props }) => <p className="my-2 leading-6" {...props} />,
+        ul: ({ node, ...props }) => <ul className="list-disc ml-5 my-2 space-y-1" {...props} />,
+        ol: ({ node, ...props }) => <ol className="list-decimal ml-5 my-2 space-y-1" {...props} />,
+        li: ({ node, ...props }) => <li className="leading-6" {...props} />,
+        table: ({ node, ...props }) => <table className="w-full text-left text-xs border-collapse my-3" {...props} />,
+        th: ({ node, ...props }) => <th className="border-b border-border px-2 py-1 font-semibold" {...props} />,
+        td: ({ node, ...props }) => <td className="border-b border-border px-2 py-1" {...props} />,
       }}
     >
       {body}
