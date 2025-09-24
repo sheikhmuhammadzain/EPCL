@@ -377,15 +377,6 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
     onFiles(e.dataTransfer.files)
   }
 
-  const monthlyLineSeries = useMemo(() => {
-    return monthlyTrends.data?.map((d) => ({ name: d.month, value: d.value })) || []
-  }, [monthlyTrends.data])
-
-  const hazardsLineSeries = useMemo(() => {
-    return hazardsMonthly.data?.map((d) => ({ name: d.month, value: d.value })) || []
-  }, [hazardsMonthly.data])
-
-  // Greens colormap mapping: lighter for low, darker for high
   const heatGreen = useCallback((v: number, vmin: number, vmax: number) => {
     const t = vmax > vmin ? (v - vmin) / (vmax - vmin) : v > 0 ? 1 : 0
     // HSL green: hue ~ 140, saturation 70%, lightness from 95% (low) to 35% (high)
@@ -728,25 +719,6 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
           <div className="col-span-1 lg:col-span-2 separator-soft" />
           {/* Hazards Section */}
           <ChartCard
-            title="Hazards — Monthly"
-            description="Hazards reported per month"
-            state={hazardsMonthly}
-            chartKey="hazards_monthly"
-            render={() => (
-              <ChartContainer config={{}} className="h-[260px] sm:h-[300px] md:h-[360px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={hazardsLineSeries} margin={{ left: 8, right: 8, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="value" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 2 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            )}
-          />
-          <ChartCard
             title="Hazards — By Location"
             description="Top locations by hazards"
             state={hazardsByLocation}
@@ -891,38 +863,6 @@ export default function SafetyDashboard({ className, style }: SafetyDashboardPro
               )}
             />
           </div>
-        <ChartCard
-          title="Monthly Trends"
-          description="Entries over time"
-          state={monthlyTrends}
-          chartKey="monthly_trends"
-          render={() => (
-            <ChartContainer
-              config={{
-                value: { label: "Count", color: "var(--chart-4)" },
-              }}
-              className="h-[260px] sm:h-[300px] md:h-[360px] w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyLineSeries} margin={{ left: 8, right: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="var(--chart-4)"
-                    strokeWidth={2}
-                    dot={{ r: 2 }}
-                    activeDot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          )}
-        />
-
         <ChartCard
           title="Entries by Location"
           description="Top locations"
@@ -1250,7 +1190,7 @@ function ChartCard<T>({
   fullHeight?: boolean
   chartKey: string
 }) {
-  const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "")
+  const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "http://103.18.20.205:8003").replace(/\/$/, "")
   const [open, setOpen] = React.useState(false)
   const [insights, setInsights] = React.useState<string>("")
   const [loading, setLoading] = React.useState(false)
@@ -1282,6 +1222,10 @@ function ChartCard<T>({
         setInsights((s) => s + decoder.decode(value, { stream: true }))
       }
     } catch (e: any) {
+      // Ignore aborts (modal closed) and avoid noisy errors
+      if (e?.name === "AbortError") {
+        return
+      }
       setInsights((s) => s + `\n[insights error] ${e?.message || String(e)}`)
     } finally {
       setLoading(false)
@@ -1324,7 +1268,9 @@ function ChartCard<T>({
                       {loading && !insights ? (
                         <p className="text-muted-foreground">Generating insights…</p>
                       ) : (
-                        <InsightsView text={insights} />
+                        <InsightsErrorBoundary>
+                          <InsightsView text={insights} />
+                        </InsightsErrorBoundary>
                       )}
                     </div>
                   </DialogContent>
@@ -1383,6 +1329,27 @@ function InsightsView({ text }: { text: string }) {
       {body}
     </ReactMarkdown>
   )
+}
+
+// Local error boundary to prevent the entire page from crashing if insights rendering throws
+class InsightsErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  componentDidCatch(error: any, info: any) {
+    // eslint-disable-next-line no-console
+    console.error("Insights render error:", error, info)
+  }
+  render() {
+    if (this.state.hasError) {
+      return <p className="text-muted-foreground">Failed to render insights. Please try again.</p>
+    }
+    return this.props.children
+  }
 }
 
 function EmptyState() {
